@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laboratorio de IA — Panel Visual de Estatus E2E</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-elev: #121931;
+      --card: #161f3b;
+      --card-hover: #1d284b;
+      --border: #27345e;
+      --text: #eef2ff;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --done: #10b981;
+      --done-bg: rgba(16, 185, 129, 0.14);
+      --current: #3b82f6;
+      --current-bg: rgba(59, 130, 246, 0.16);
+      --warn: #f59e0b;
+      --warn-bg: rgba(245, 158, 11, 0.14);
+      --pending: #8b5cf6;
+      --pending-bg: rgba(139, 92, 246, 0.14);
+      --blocked: #ef4444;
+      --blocked-bg: rgba(239, 68, 68, 0.14);
+      --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    body.light {
+      --bg: #f4f7fb;
+      --bg-elev: #ffffff;
+      --card: #ffffff;
+      --card-hover: #f8fafc;
+      --border: #dbe3f0;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #2563eb;
+      --done: #059669;
+      --done-bg: rgba(5, 150, 105, 0.10);
+      --current: #2563eb;
+      --current-bg: rgba(37, 99, 235, 0.10);
+      --warn: #d97706;
+      --warn-bg: rgba(217, 119, 6, 0.10);
+      --pending: #7c3aed;
+      --pending-bg: rgba(124, 58, 237, 0.10);
+      --blocked: #dc2626;
+      --blocked-bg: rgba(220, 38, 38, 0.10);
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .title-group h1 {
+      margin: 0 0 6px;
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    button.theme-btn {
+      cursor: pointer;
+      padding: 7px 13px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+    button.theme-btn:hover { background: var(--card-hover); }
+
+    /* KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .kpi-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-size: 1.45rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .kpi-note {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* Filter Bar */
+    .section-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filter-btn {
+      cursor: pointer;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      background: var(--current-bg);
+    }
+
+    /* E2E Diagram Flow */
+    .e2e-wrapper {
+      background: var(--bg-elev);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    .track-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .e2e-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      min-width: 980px;
+      padding-bottom: 6px;
+    }
+
+    .stage-node {
+      flex: 1 1 0;
+      min-width: 155px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 12px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s, background 0.15s, opacity 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .stage-node:hover {
+      transform: translateY(-2px);
+      background: var(--card-hover);
+    }
+    .stage-node.selected {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22);
+    }
+    .stage-node.dimmed {
+      opacity: 0.28;
+    }
+
+    .stage-node[data-status="done"] { border-top: 4px solid var(--done); }
+    .stage-node[data-status="current"] { border-top: 4px solid var(--current); }
+    .stage-node[data-status="unexecuted"] { border-top: 4px solid var(--warn); border-style: dashed; border-top-style: solid; }
+    .stage-node[data-status="pending"] { border-top: 4px solid var(--pending); }
+    .stage-node[data-status="blocked"] { border-top: 4px solid var(--blocked); }
+
+    .connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      flex: 0 0 26px;
+      color: var(--muted);
+    }
+
+    .stage-step {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stage-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .stage-meta {
+      font-size: 0.76rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .status-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+    .st-done { background: var(--done-bg); color: var(--done); }
+    .st-current { background: var(--current-bg); color: var(--current); }
+    .st-unexecuted { background: var(--warn-bg); color: var(--warn); }
+    .st-pending { background: var(--pending-bg); color: var(--pending); }
+    .st-blocked { background: var(--blocked-bg); color: var(--blocked); }
+
+    /* Detail + Side Panels */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .panel h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+    .detail-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-list {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+    .detail-list li {
+      margin-bottom: 7px;
+      font-size: 0.9rem;
+    }
+    .callout {
+      margin-top: 14px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-elev);
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+    .callout strong { color: var(--text); }
+
+    /* Comparison Table & Truth Matrix */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 860px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--done), var(--current));
+    }
+
+    footer {
+      margin-top: 26px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-group">
+        <h1>Laboratorio de IA — Panel Visual de Estatus E2E</h1>
+        <p class="subtitle">
+          Mapa end-to-end basado en la documentación oficial del repositorio
+          (<a href="README.md">README</a> · <a href="ESTADO.md">ESTADO</a> · <a href="ROADMAP.md">ROADMAP</a> · <a href="EVIDENCIA.md">EVIDENCIA</a>)
+        </p>
+      </div>
+      <div class="header-actions">
+        <span class="pill-badge">
+          <span class="dot" style="background: var(--current)"></span>
+          Fase actual: Documentación publicada (GitHub Public)
+        </span>
+        <span class="pill-badge">
+          <span class="dot" style="background: var(--warn)"></span>
+          Taller completo: No ejecutado
+        </span>
+        <button class="theme-btn" id="themeToggle" type="button">Cambiar tema</button>
+      </div>
+    </header>
+
+    <!-- KPIs -->
+    <section class="kpi-grid" aria-label="Resumen de estado">
+      <div class="kpi">
+        <div class="kpi-label">Estado operativo</div>
+        <div class="kpi-value" style="color: var(--warn)">Solo documental</div>
+        <div class="kpi-note">Sin aplicaciones, pesos, modelos ni taller desplegado en el repo.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Evidencia histórica</div>
+        <div class="kpi-value" style="color: var(--done)">2 rondas + 1 smoke</div>
+        <div class="kpi-note">29 pruebas y 27 checks navegador en Ronda 2 (2026-10-19).</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Plan del taller (24 tareas)</div>
+        <div class="kpi-value" style="color: var(--warn)">0 / 4 olas</div>
+        <div class="kpi-note">Flash Next + Open WebUI + Docker Desktop sin ejecutar.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Roadmap activo</div>
+        <div class="kpi-value" style="color: var(--pending)">0 / 5 hitos</div>
+        <div class="kpi-note">Siguiente paso: Hito 1 (Inventario de solo lectura).</div>
+        <div class="progress-bar" title="Avance del roadmap operativo: 0 de 5 hitos">
+          <div class="progress-fill" style="width: 32%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- E2E Diagram -->
+    <section>
+      <div class="section-header">
+        <h2>Diagrama E2E de Desarrollo (haz clic en cualquier etapa para inspeccionar)</h2>
+        <div class="filters" role="group" aria-label="Filtrar etapas por estado">
+          <button class="filter-btn active" data-filter="all" type="button">Todas (8)</button>
+          <button class="filter-btn" data-filter="done" type="button">Histórico / Publicado</button>
+          <button class="filter-btn" data-filter="unexecuted" type="button">No ejecutado</button>
+          <button class="filter-btn" data-filter="pending" type="button">Pendiente</button>
+          <button class="filter-btn" data-filter="blocked" type="button">Condicional / Futuro</button>
+        </div>
+      </div>
+
+      <div class="e2e-wrapper">
+        <div class="track-label">Flujo End-to-End: Evidencia Histórica (Oct 2026) → Registro GitHub (Nov 2026) → Roadmap Operativo (Hitos 1–5)</div>
+        <div class="e2e-flow" id="e2eFlow"></div>
+      </div>
+    </section>
+
+    <!-- Selected Stage Detail + Next Action -->
+    <section class="main-grid">
+      <div class="panel" id="detailPanel" aria-live="polite"></div>
+
+      <div class="panel">
+        <h3>Estado de los Hitos del Roadmap</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Hito</th>
+              <th>Objetivo</th>
+              <th>Estatus</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Hito 1</strong></td>
+              <td>Inventario actual de solo lectura (hardware, versiones, modelos)</td>
+              <td><span class="status-tag st-pending">Siguiente</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 2</strong></td>
+              <td>Piloto directo aislado (OpenCode con confirmaciones)</td>
+              <td><span class="status-tag st-pending">Pendiente</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 3</strong></td>
+              <td>Comparación acotada (3 tareas, 1 modelo a la vez)</td>
+              <td><span class="status-tag st-pending">Pendiente</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 4</strong></td>
+              <td>Decidir integración web (Open WebUI + Computer)</td>
+              <td><span class="status-tag st-blocked">Condicional</span></td>
+            </tr>
+            <tr>
+              <td><strong>Hito 5</strong></td>
+              <td>Reproducibilidad, persistencia y restauración</td>
+              <td><span class="status-tag st-blocked">Futuro</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <strong>Regla de compuerta:</strong> No se habilita la ruta web desatendida (Hito 4) sin validar primero el piloto directo con confirmaciones (Hito 2) y revisar permisos/aislamiento.
+        </div>
+      </div>
+    </section>
+
+    <!-- Evidence vs Non-demonstrated -->
+    <section class="two-col">
+      <div class="panel">
+        <h3>Evidencia Histórica Registrada (Octubre 2026)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Ensayo</th>
+              <th>Fecha</th>
+              <th>Resultado acotado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Evaluación 1 (Tablero)</strong></td>
+              <td>2026-10-18</td>
+              <td>Qwen 3.8 pasó 16 pruebas + navegador; Qwen 3.6 pasó 17 de lógica pero falló en integración web.</td>
+            </tr>
+            <tr>
+              <td><strong>Ronda 2 (6 modelos)</strong></td>
+              <td>2026-10-19</td>
+              <td>Coordinación externa: 29 pruebas + 27 checks navegador aprobados; corrigió edición y tamaño de control.</td>
+            </tr>
+            <tr>
+              <td><strong>Flash-Next Smoke Test</strong></td>
+              <td>2026-10-19</td>
+              <td>Chat válido + 1 tool call estructurado (no ejecutado); 4.43–6.17 tok/s; runtime detenido después.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>Límites: Lo que NO está demostrado aún</h3>
+        <ul class="detail-list">
+          <li>Delegación autónoma de <strong>OmO</strong> sobre los seis modelos de la Ronda 2.</li>
+          <li>Superioridad universal de un modelo, equivalencia comercial o velocidad mínima sostenida.</li>
+          <li>Contexto largo operativo útil para cualquier tarea de programación.</li>
+          <li>Disponibilidad actual de servicios, laboratorio web completo o publicación de apps.</li>
+          <li>Portabilidad a otro equipo/SO sin pruebas de recuperación y restauración reales.</li>
+        </ul>
+        <div class="callout">
+          <strong>Control de publicación:</strong> Código, pesos, binarios, respaldos y credenciales quedan excluidos explícitamente de este repositorio público.
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Generado a partir de los documentos del repositorio <code>Andres-DLT/laboratorio-ia-docs</code> · Preparación documental: 2026-11-06 · Publicación GitHub: 2026-11-13
+    </footer>
+  </div>
+
+  <script>
+    const stages = [
+      {
+        id: "eval1",
+        step: "ETAPA 1",
+        title: "Evaluación 1 & OpenCode",
+        meta: "2026-10-18",
+        status: "done",
+        statusLabel: "Histórico",
+        summary: "Primera evaluación comparativa sobre un tablero en entornos aislados y registro de recuperación de OpenCode.",
+        bullets: [
+          "Qwen 3.8 superó 16 pruebas y las comprobaciones de navegador descritas.",
+          "Qwen 3.6 superó 17 pruebas de lógica, pero falló en la integración de la página y respuesta de uso.",
+          "Demostró diferencias entre entregas concretas; no constituye ranking universal."
+        ],
+        limit: "Resultados fechados en condiciones históricas; no se re-ejecutaron al preparar este registro."
+      },
+      {
+        id: "ronda2",
+        step: "ETAPA 2",
+        title: "Ronda 2 & Smoke Flash-Next",
+        meta: "2026-10-19",
+        status: "done",
+        statusLabel: "Histórico",
+        summary: "Entregas de 6 modelos coordinadas externamente más prueba acotada de Flash-Next.",
+        bullets: [
+          "Ronda 2: 29 pruebas aprobadas y 27 comprobaciones de navegador aprobadas.",
+          "Se corrigieron fallos de edición interrumpida y tamaño de un control.",
+          "Flash-Next: chat válido y 1 llamada de herramienta estructurada (sin ejecución real) a 4.43–6.17 tok/s."
+        ],
+        limit: "La secuencia fue coordinada externamente (no autonomía de OmO) y el runtime temporal fue detenido."
+      },
+      {
+        id: "taller",
+        step: "ETAPA 3",
+        title: "Plan Taller Completo",
+        meta: "2026-10-19",
+        status: "unexecuted",
+        statusLabel: "No ejecutado",
+        summary: "Plan de Flash Next + Open WebUI + Docker Desktop con 24 tareas en 4 olas y rutas directa/web.",
+        bullets: [
+          "Documento arquitectónico propuesto: no existe despliegue ni ejecución real.",
+          "La revisión de alta precisión originalmente prevista quedó incompleta.",
+          "Incluye ruta web desatendida sin confirmación por acción."
+        ],
+        limit: "No debe citarse como instalación activa ni como aprobación integral."
+      },
+      {
+        id: "docs",
+        step: "ETAPA 4",
+        title: "Registro Documental GitHub",
+        meta: "2026-11-06 → 11-13",
+        status: "current",
+        statusLabel: "Actual (Público)",
+        summary: "Consolidación documental auditada y publicada en GitHub (Andres-DLT/laboratorio-ia-docs).",
+        bullets: [
+          "Cuatro documentos Markdown enlazados: README, ESTADO, ROADMAP y EVIDENCIA.",
+          "Excluye código fuente, modelos, pesos, configuraciones privadas y credenciales.",
+          "Repositorio público en rama main como línea base de decisiones."
+        ],
+        limit: "Es únicamente un registro documental: no sustituye artefactos ni respaldos locales."
+      },
+      {
+        id: "hito1",
+        step: "ETAPA 5 · HITO 1",
+        title: "Inventario Solo Lectura",
+        meta: "Próximo paso",
+        status: "pending",
+        statusLabel: "Pendiente",
+        summary: "Auditoría de solo lectura del equipo actual para saber con qué recursos reales se cuenta hoy.",
+        bullets: [
+          "Confirmar hardware, versiones y modelos disponibles sin modificar servicios.",
+          "Registrar diferencias frente a los ensayos de octubre 2026.",
+          "Elegir 1 solo candidato inicial basado en pruebas actuales y acordar límites."
+        ],
+        limit: "Requisito previo obligatorio antes de lanzar cualquier piloto."
+      },
+      {
+        id: "hito2",
+        step: "ETAPA 6 · HITO 2",
+        title: "Piloto Directo Aislado",
+        meta: "Roadmap",
+        status: "pending",
+        statusLabel: "Pendiente",
+        summary: "Ejecución controlada de una tarea pequeña en un workspace nuevo y sin datos personales.",
+        bullets: [
+          "Entrada directa de OpenCode con confirmaciones explícitas por acción.",
+          "No montar directorios personales completos ni exponer credenciales.",
+          "Definir pruebas funcionales y de recuperación antes de evaluar."
+        ],
+        limit: "Depende de completar el inventario de solo lectura (Hito 1)."
+      },
+      {
+        id: "hito3",
+        step: "ETAPA 7 · HITO 3",
+        title: "Comparación Acotada",
+        meta: "Roadmap",
+        status: "pending",
+        statusLabel: "Pendiente",
+        summary: "Evaluación metodológica de 3 tareas comparables, probando un modelo a la vez.",
+        bullets: [
+          "Separar respuesta válida, pruebas de lógica, integración y uso real.",
+          "Conservar condiciones, versiones, fallos y reintentos.",
+          "Evitar rankings absolutos."
+        ],
+        limit: "Requiere metodología homogénea validada tras el piloto directo."
+      },
+      {
+        id: "hito45",
+        step: "ETAPA 8 · HITOS 4–5",
+        title: "Web & Reproducibilidad",
+        meta: "Futuro",
+        status: "blocked",
+        statusLabel: "Condicional",
+        summary: "Decisión sobre Open WebUI + Computer y validación formal de persistencia y restauración.",
+        bullets: [
+          "Hito 4: evaluar ruta web solo si el piloto directo cumple criterios y bajo revisión de permisos.",
+          "Recordar que una guardia escritora única organiza concurrencia, pero no es sandbox del SO.",
+          "Hito 5: probar recuperación, persistencia y restauración por sistema/hardware."
+        ],
+        limit: "Bloqueado hasta aprobar Hitos 1–3 y autorizar cambios de red, servicios y acceso."
+      }
+    ];
+
+    const flowEl = document.getElementById("e2eFlow");
+    const detailEl = document.getElementById("detailPanel");
+    let selectedId = "docs";
+    let activeFilter = "all";
+
+    function statusClass(status) {
+      return {
+        done: "st-done",
+        current: "st-current",
+        unexecuted: "st-unexecuted",
+        pending: "st-pending",
+        blocked: "st-blocked"
+      }[status] || "st-pending";
+    }
+
+    function renderFlow() {
+      flowEl.innerHTML = "";
+      stages.forEach((st, idx) => {
+        const node = document.createElement("div");
+        const matches = activeFilter === "all" || st.status === activeFilter || (activeFilter === "done" && st.status === "current");
+        node.className = `stage-node ${st.id === selectedId ? "selected" : ""} ${matches ? "" : "dimmed"}`;
+        node.dataset.status = st.status;
+        node.tabIndex = 0;
+        node.setAttribute("role", "button");
+        node.setAttribute("aria-label", `${st.step}: ${st.title} (${st.statusLabel})`);
+        node.innerHTML = `
+          <div>
+            <div class="stage-step">${st.step}</div>
+            <div class="stage-title">${st.title}</div>
+            <div class="stage-meta">${st.meta}</div>
+          </div>
+          <span class="status-tag ${statusClass(st.status)}">${st.statusLabel}</span>
+        `;
+        node.addEventListener("click", () => { selectedId = st.id; renderFlow(); renderDetail(); });
+        node.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            selectedId = st.id;
+            renderFlow();
+            renderDetail();
+          }
+        });
+        flowEl.appendChild(node);
+
+        if (idx < stages.length - 1) {
+          const arrow = document.createElement("div");
+          arrow.className = "connector";
+          arrow.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>`;
+          flowEl.appendChild(arrow);
+        }
+      });
+    }
+
+    function renderDetail() {
+      const st = stages.find(s => s.id === selectedId) || stages[3];
+      detailEl.innerHTML = `
+        <div class="detail-header">
+          <div>
+            <div class="stage-step">${st.step} · ${st.meta}</div>
+            <h3 style="margin: 2px 0 0; font-size: 1.18rem;">${st.title}</h3>
+          </div>
+          <span class="status-tag ${statusClass(st.status)}">${st.statusLabel}</span>
+        </div>
+        <p style="margin: 0 0 8px; font-size: 0.94rem;">${st.summary}</p>
+        <ul class="detail-list">
+          ${st.bullets.map(b => `<li>${b}</li>`).join("")}
+        </ul>
+        <div class="callout">
+          <strong>Límite / Condición:</strong> ${st.limit}
+        </div>
+      `;
+    }
+
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeFilter = btn.dataset.filter;
+        renderFlow();
+      });
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      document.body.classList.toggle("light");
+    });
+
+    renderFlow();
+    renderDetail();
+  </script>
+</body>
+</html>
