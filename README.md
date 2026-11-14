@@ -7,6 +7,7 @@
 
 ## Por donde empezar
 
+- [Panel visual de estatus E2E (GitHub Pages)](https://andres-dlt.github.io/laboratorio-ia-docs/).
 - [Estado: realizado, propuesto y pendiente](ESTADO.md).
 - [Roadmap de un piloto acotado](ROADMAP.md).
 - [Evidencia historica y sus limites](EVIDENCIA.md).
